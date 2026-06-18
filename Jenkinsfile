@@ -58,7 +58,7 @@ pipeline {
                     passwordVariable: 'REGISTRY_PASS'
                 )]) {
                     sh '''
-                    echo \$REGISTRY_PASS | docker login ghcr.io -u \$REGISTRY_USER --password-stdin
+                    docker login ghcr.io -u "$REGISTRY_USER" -p "$REGISTRY_PASS"
                     docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
                     docker push ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
                     docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${REGISTRY}/${IMAGE_NAME}:latest

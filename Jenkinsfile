@@ -4,7 +4,7 @@ pipeline {
 
     environment {
         IMAGE_NAME = 'sentiment-ai'
-        REGISTRY   = 'ghcr.io/VOTRE_PSEUDO' // remplacez VOTRE_PSEUDO
+        REGISTRY   = 'ghcr.io/youssef1129' // remplacez VOTRE_PSEUDO
         
         // IMAGE_TAG = SHA Git court du commit (ex: a3f8c12)
         // Chaque build produit une image taguée de façon unique et traçable
@@ -58,7 +58,7 @@ pipeline {
                     passwordVariable: 'REGISTRY_PASS'
                 )]) {
                     sh '''
-                    docker login ghcr.io -u "$REGISTRY_USER" -p "$REGISTRY_PASS"
+                    echo \$REGISTRY_PASS | docker login ghcr.io -u \$REGISTRY_USER --password-stdin
                     docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
                     docker push ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
                     docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${REGISTRY}/${IMAGE_NAME}:latest

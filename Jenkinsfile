@@ -33,7 +33,40 @@ pipeline {
             }
         }
         
-        // C'est ici que tu ajouteras le Stage 3 (Build) et Stage 4 (Test) plus tard
+        stage('Build & Test') {
+            steps {
+                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                sh """
+                docker run --rm \
+                    ${IMAGE_NAME}:${IMAGE_TAG} \
+                    pytest tests/ -v --cov=src --cov-report=xml:coverage.xml --cov-report=term-missing --cov-fail-under=70
+                """
+            }
+            post {
+                failure {
+                    echo 'Tests échoués ou coverage insuffisant (< 70%)'
+                }
+            }
+        }
+
+        stage('Push') {
+            when { branch 'main' }
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'github-token',
+                    usernameVariable: 'REGISTRY_USER',
+                    passwordVariable: 'REGISTRY_PASS'
+                )]) {
+                    sh """
+                    echo \$REGISTRY_PASS | docker login ghcr.io -u \$REGISTRY_USER --password-stdin
+                    docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
+                    docker push ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
+                    docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${REGISTRY}/${IMAGE_NAME}:latest
+                    docker push ${REGISTRY}/${IMAGE_NAME}:latest
+                    """
+                }
+            }
+        }
     }
 
     post {

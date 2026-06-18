@@ -1,0 +1,23 @@
+FROM python:3.11-slim
+
+# Installer curl pour le healthcheck
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Définir le répertoire de travail dans le conteneur
+WORKDIR /app
+
+# Étape 1 : copier UNIQUEMENT le fichier de dépendances
+COPY requirements.txt .
+
+# Étape 2 : installer les dépendances
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Étape 3 : copier le code source
+COPY src/ ./src/
+COPY tests/ ./tests/
+
+# Documenter le port utilisé par l’application
+EXPOSE 8000
+
+# Commande de démarrage du serveur Uvicorn
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]

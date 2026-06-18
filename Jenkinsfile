@@ -50,7 +50,7 @@ pipeline {
         }
 
         stage('Push') {
-            when { branch 'main' }
+            // when { branch 'main' }
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'github-token',

@@ -68,29 +68,28 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-            environment {
-                SONARQUBE_TOKEN = credentials('sonar-token')
-            }
             steps {
-                withSonarQubeEnv('sonarqube') {
-                    sh '''
-                    docker run --rm \
-                    --network cicd-network \
-                    --volumes-from jenkins \
-                    -w "$WORKSPACE" \
-                    -e SONAR_HOST_URL="$SONAR_HOST_URL" \
-                    -e SONAR_TOKEN="$SONARQUBE_TOKEN" \
-                    sonarsource/sonar-scanner-cli:latest \
-                    sonar-scanner \
-                    -Dsonar.projectKey=sentiment-ai \
-                    -Dsonar.projectName=SentimentAI \
-                    -Dsonar.projectBaseDir="$WORKSPACE" \
-                    -Dsonar.sources=src \
-                    -Dsonar.python.version=3.11 \
-                    -Dsonar.python.coverage.reportPaths=coverage.xml \
-                    -Dsonar.sourceEncoding=UTF-8 \
-                    -Dsonar.scanner.metadataFilePath=$WORKSPACE/report-task.txt
-                    '''
+                withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
+                    withSonarQubeEnv('sonarqube') {
+                        // Ajout de --user root et de -Dsonar.scm.disabled=true / correction des chemins
+                        sh """
+                        docker run --rm --user root --network cicd-network --volumes-from jenkins \
+                        -w /var/jenkins_home/workspace/sentiment-ai-pipeline \
+                        -e SONAR_HOST_URL=http://sonarqube:9000 \
+                        -e SONAR_TOKEN=${SONAR_TOKEN} \
+                        sonarsource/sonar-scanner-cli:latest sonar-scanner \
+                        -Dsonar.projectKey=sentiment-ai \
+                        -Dsonar.projectName=SentimentAI \
+                        -Dsonar.projectBaseDir=/var/jenkins_home/workspace/sentiment-ai-pipeline \
+                        -Dsonar.sources=src \
+                        -Dsonar.python.version=3.11 \
+                        -Dsonar.python.coverage.reportPaths=coverage.xml \
+                        -Dsonar.python.xunit.skipDetails=true \
+                        -Dsonar.sources.inclusions=src/** \
+                        -Dsonar.sourceEncoding=UTF-8 \
+                        -Dsonar.scanner.metadataFilePath=/var/jenkins_home/workspace/sentiment-ai-pipeline/report-task.txt
+                        """
+                    }
                 }
             }
         }

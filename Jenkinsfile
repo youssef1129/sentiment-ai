@@ -56,6 +56,11 @@ pipeline {
                 docker cp test-runner:/tmp/coverage.xml ./coverage.xml 2>/dev/null || true
                 docker rm -f test-runner 2>/dev/null || true
 
+                # FIX COVERAGE DEFINITIF : On supprime la racine virtuelle /app pour forcer les chemins relatifs
+                if [ -f coverage.xml ]; then
+                    sed -i 's|/app/||g' coverage.xml
+                fi
+
                 # Retourner le code de sortie des tests
                 exit $TEST_EXIT_CODE
                 '''
@@ -73,11 +78,8 @@ pipeline {
             }
             steps {
                 withSonarQubeEnv('sonarqube') {
-                    sh '''
-                    # FIX COVERAGE : On remplace le chemin /app virtuel par le vrai chemin absolu du WORKSPACE dans le XML
-                    sed -i "s|<source>/app</source>|<source>${WORKSPACE}</source>|g" coverage.xml
-                    
-                    # FIX DROITS : Ajout de --user root pour autoriser l'écriture du report-task.txt dans le WORKSPACE
+                    sh '''                    
+                    # FIX DROITS : Exécution propre avec --user root pour générer le report-task.txt sans encombre
                     docker run --rm \
                         --user root \
                         --network cicd-network \
@@ -104,14 +106,12 @@ pipeline {
             steps {
                 timeout(time: 15, unit: 'MINUTES') {
                     // Attend le résultat asynchrone du Quality Gate SonarQube
-                    // abortPipeline: true => bloque Push et Deploy si le gate échoue
                     waitForQualityGate abortPipeline: true
                 }
             }
         }
 
         stage('Push') {
-            // when { branch 'main' }
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'github-token',
@@ -128,7 +128,7 @@ pipeline {
                 }
             }
         }
-    }
+}
 
     post {
         always {

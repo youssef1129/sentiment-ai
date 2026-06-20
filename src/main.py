@@ -16,7 +16,7 @@ def health():
 
 @app.post("/predict", response_model=PredictionResponse)
 def predict(request: PredictionRequest):
-    """Analyse le sentiment du texte fourni et retourne un label + score..."""
+    """Analyse le sentiment du texte fourni et retourne un label + score."""
     return model.predict(request.text)
 
 # Test de relance du pipeline

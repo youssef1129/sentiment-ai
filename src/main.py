@@ -1,9 +1,9 @@
-from fastapi import FastAPI
 from src.schemas import PredictionRequest, PredictionResponse
 from src.model import SentimentModel
 from prometheus_fastapi_instrumentator import Instrumentator
 from prometheus_client import Counter, Gauge, Histogram
 import time
+from fastapi import FastAPI, HTTPException
 
 app = FastAPI(title="SentimentAI", version="0.0.1")
 model = SentimentModel()
@@ -42,12 +42,12 @@ def predict(request: PredictionRequest):
     try:
         result = model.predict(request.text)
         duration = time.time() - start
-        
+
         # Enregistrement des métriques Prometheus
         predictions_total.labels(label=result["label"], status="ok").inc()
         confidence_gauge.labels(label=result["label"]).set(result["score"])
         prediction_duration.observe(duration)
-        
+
         return result
     except Exception as e:
         predictions_total.labels(label="UNKNOWN", status="error").inc()
